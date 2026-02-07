@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:16
+    container_name: skillup-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: skillup
+      POSTGRES_INITDB_ARGS: "--auth-host=trust --auth-local=trust"
+    ports:
+      - "5433:5432"
+    volumes:
+      - skillup_pg:/var/lib/postgresql/data
+
+volumes:
+  skillup_pg:

@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum ItemType {
+  TECH_SKILL
+  SOFT_SKILL
+  CERTIFICATION
+}
+
+enum ChecklistItemStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  DONE
+}
+
+model User {
+  id    String   @id @default(cuid())
+  email String   @unique
+  name  String?
+  image String?
+  role  UserRole @default(USER)
+
+  profile     Profile?
+  assessments Assessment[]
+  checklists  Checklist[]
+  jobSearches JobSearch[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Profile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  major String
+  level String?
+  city  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CareerPath {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  name        String
+  description String?
+
+  checklists  Checklist[]
+  assessments Assessment[] @relation("AssessmentTargetPath")
+
+  chosenByAssessments Assessment[] @relation("AssessmentChosenPath")
+  jobSearches         JobSearch[]  @relation("JobSearchCareerPath")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Assessment {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  major       String
+  resultsJson Json?
+
+  chosenPathId String?
+  chosenPath   CareerPath? @relation("AssessmentChosenPath", fields: [chosenPathId], references: [id])
+
+  targetPathId String?
+  targetPath   CareerPath? @relation("AssessmentTargetPath", fields: [targetPathId], references: [id])
+
+  answers   AssessmentAnswer[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+}
+
+model AssessmentAnswer {
+  id           String     @id @default(cuid())
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  questionKey String
+  answerValue String
+
+  createdAt DateTime @default(now())
+}
+
+model Checklist {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  careerPathId String
+  careerPath   CareerPath @relation(fields: [careerPathId], references: [id])
+
+  title      String
+  summary    String?
+  sourceJson Json?
+
+  items ChecklistItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, careerPathId])
+}
+
+model ChecklistItem {
+  id          String    @id @default(cuid())
+  checklistId String
+  checklist   Checklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+
+  type        ItemType
+  name        String
+  description String?
+  priority    Int?
+  status      ChecklistItemStatus @default(NOT_STARTED)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([checklistId, type])
+}
+
+model JobSearch {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  careerPathId String?
+  careerPath   CareerPath? @relation("JobSearchCareerPath", fields: [careerPathId], references: [id])
+
+  query       String
+  location    String?
+  resultsJson Json?
+
+  createdAt DateTime @default(now())
+}
